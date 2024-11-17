@@ -1,0 +1,36 @@
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { productId, targetPrice } = await request.json();
+
+    // Get user session
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (authError || !session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Update target price
+    const { error } = await supabase
+      .from('user_products')
+      .update({ target_price: targetPrice })
+      .eq('user_id', session.user.id)
+      .eq('product_id', productId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating target price:', error);
+    return NextResponse.json(
+      { error: 'Failed to update target price' },
+      { status: 500 }
+    );
+  }
+}
