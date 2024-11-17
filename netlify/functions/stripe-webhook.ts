@@ -25,8 +25,11 @@ export const handler: Handler = async (event) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
-        const customer = await stripe.customers.retrieve(subscription.customer as string);
-        const userId = customer.metadata.supabase_user_id;
+        const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
+        
+        if (customer.deleted) {
+          throw new Error('Customer has been deleted');
+        }
 
         await supabase
           .from('profiles')
@@ -35,14 +38,17 @@ export const handler: Handler = async (event) => {
             subscription_id: subscription.id,
             subscription_status: subscription.status,
           })
-          .eq('id', userId);
+          .eq('id', customer.metadata.supabase_user_id);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
-        const customer = await stripe.customers.retrieve(subscription.customer as string);
-        const userId = customer.metadata.supabase_user_id;
+        const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
+        
+        if (customer.deleted) {
+          throw new Error('Customer has been deleted');
+        }
 
         await supabase
           .from('profiles')
@@ -51,7 +57,7 @@ export const handler: Handler = async (event) => {
             subscription_id: null,
             subscription_status: 'canceled',
           })
-          .eq('id', userId);
+          .eq('id', customer.metadata.supabase_user_id);
         break;
       }
     }
