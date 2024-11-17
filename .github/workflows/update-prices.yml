@@ -10,5 +10,4 @@ jobs:
     steps:
       - name: Trigger Netlify Function
         run: |
-          curl -X POST https://your-netlify-site.netlify.app/.netlify/functions/update-prices \
-          -H "Authorization: Bearer pricewatcher_cron_6739455c1cddd52dc6be6402"
+          curl -X POST https://api.netlify.com/build_hooks/6739455c1cddd52dc6be6402
