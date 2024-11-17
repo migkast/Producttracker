@@ -1,0 +1,13 @@
+name: Update Product Prices
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify Build Hook
+        run: |
+          curl -X POST -d {} https://api.netlify.com/build_hooks/6739455c1cddd52dc6be6402
