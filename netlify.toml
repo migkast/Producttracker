@@ -4,7 +4,8 @@
   functions = "netlify/functions"
 
 [functions]
-  external_node_modules = ["@supabase/supabase-js", "openai", "stripe"]
+  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "playwright-core"]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/api/*"
@@ -13,3 +14,4 @@
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
+  PLAYWRIGHT_BROWSERS_PATH = "0"
