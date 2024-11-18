@@ -15,11 +15,6 @@ const nextConfig = {
         net: false,
         tls: false,
       };
-      config.externals.push(
-        'playwright-core',
-        'playwright',
-        '@playwright/test'
-      );
     }
     return config;
   },
