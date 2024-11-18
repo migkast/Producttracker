@@ -35,12 +35,14 @@ export const handler: Handler = async (event) => {
       .eq('id', user.id)
       .single();
 
-    const { count } = await supabase
+    const { count: trackedCount } = await supabase
       .from('user_products')
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    if (!profile?.is_premium && count >= 5) {
+    const currentCount = trackedCount ?? 0;
+
+    if (!profile?.is_premium && currentCount >= 5) {
       return {
         statusCode: 403,
         body: JSON.stringify({
