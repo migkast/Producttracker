@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Users, Copy, Gift } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import type { Database } from "@/lib/db-types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type UserStats = Database['public']['Tables']['user_stats']['Row'];
 
 interface ReferralProgramProps {
   userId: string;
@@ -22,15 +26,21 @@ export function ReferralProgram({ userId }: ReferralProgramProps) {
   useEffect(() => {
     async function fetchReferralData() {
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("referral_code, successful_referrals")
-          .eq("id", userId)
+        const { data: stats } = await supabase
+          .from('user_stats')
+          .select('successful_referrals')
+          .eq('user_id', userId)
           .single();
 
-        if (profile) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('referral_code')
+          .eq('id', userId)
+          .single();
+
+        if (stats && profile) {
           setReferralCode(profile.referral_code);
-          setReferralCount(profile.successful_referrals);
+          setReferralCount(stats.successful_referrals);
         }
       } catch (error) {
         console.error("Error fetching referral data:", error);
