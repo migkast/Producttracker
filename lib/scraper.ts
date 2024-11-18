@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import puppeteer from 'puppeteer-core';
 import { supabase } from './supabase';
 import { Product } from '@/types';
 
@@ -9,10 +9,15 @@ interface ScrapedPrice {
 }
 
 export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | null> {
-  const browser = await chromium.launch();
+  const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: process.env.CHROME_BIN || undefined,
+    headless: true,
+  });
+  
   try {
     const page = await browser.newPage();
-    await page.goto(url);
+    await page.goto(url, { waitUntil: 'networkidle0' });
 
     // Common price selectors for different retailers
     const priceSelectors = [
@@ -28,7 +33,7 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
     for (const selector of priceSelectors) {
       const priceElement = await page.$(selector);
       if (priceElement) {
-        const priceText = await priceElement.textContent();
+        const priceText = await priceElement.evaluate(el => el.textContent);
         if (priceText) {
           price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
           break;
@@ -104,30 +109,20 @@ export async function updateProductPrices() {
 
         // Send notifications to users
         for (const alert of alerts || []) {
-          await sendPriceAlert(alert.user_id, product, scrapedPrice.price);
+          await fetch('/.netlify/functions/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: alert.user_id,
+              productId: product.id,
+              message: `Price alert: ${product.name} is now $${scrapedPrice.price}`,
+            }),
+          });
         }
       }
     }
   } catch (error) {
     console.error('Error updating product prices:', error);
     throw error;
-  }
-}
-
-async function sendPriceAlert(userId: string, product: Product, newPrice: number) {
-  try {
-    const message = `Price alert: ${product.name} is now $${newPrice}`;
-    
-    await fetch('/api/notifications/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        productId: product.id,
-        message,
-      }),
-    });
-  } catch (error) {
-    console.error('Error sending price alert:', error);
   }
 }
