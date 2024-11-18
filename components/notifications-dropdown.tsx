@@ -22,12 +22,12 @@ export function NotificationsDropdown() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
 
-    async function fetchNotifications() {
+    const fetchNotifications = async () => {
       try {
         const { data, error } = await supabase
           .from('notifications')
@@ -43,13 +43,13 @@ export function NotificationsDropdown() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchNotifications();
-  }, [user]);
+  }, [user?.id]);
 
-  async function markAsRead(notificationId: string) {
-    if (!user) return;
+  const markAsRead = async (notificationId: string) => {
+    if (!user?.id) return;
 
     try {
       await fetch('/api/notifications/mark-read', {
@@ -66,9 +66,9 @@ export function NotificationsDropdown() {
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
-  }
+  };
 
-  if (!user) {
+  if (!user?.id) {
     return null;
   }
 
