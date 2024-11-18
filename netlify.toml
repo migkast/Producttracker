@@ -3,8 +3,14 @@
   publish = ".next"
   functions = "netlify/functions"
 
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1"
+  CHROME_BIN = "/usr/bin/chromium-browser"
+
 [functions]
-  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "playwright-core"]
+  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "puppeteer-core"]
   node_bundler = "esbuild"
 
 [[redirects]]
@@ -12,6 +18,5 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-[build.environment]
-  NEXT_TELEMETRY_DISABLED = "1"
-  PLAYWRIGHT_BROWSERS_PATH = "0"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
