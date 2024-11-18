@@ -17,6 +17,7 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
       headers: {
         'User-Agent': USER_AGENT,
       },
+      timeout: 10000, // 10 second timeout
     });
 
     const $ = cheerio.load(html);
@@ -29,7 +30,10 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
       '[itemprop="price"]',
       '.a-price-whole',
       '.price-characteristic',
-      // Add more selectors as needed for different retailers
+      '[data-automation="product-price"]',
+      '.product__price',
+      '.price-box',
+      '.current-price',
     ];
 
     let price: number | null = null;
@@ -42,8 +46,11 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
         const matches = priceText.match(/[\d,.]+/);
         if (matches) {
           // Convert price string to number, handling different formats
-          price = parseFloat(matches[0].replace(/[,.]/g, '')) / 100;
-          break;
+          const cleanPrice = matches[0].replace(/[^\d.]/g, '');
+          price = parseFloat(cleanPrice);
+          if (!isNaN(price)) {
+            break;
+          }
         }
       }
     }
@@ -55,13 +62,16 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
         const text = $(element).text().trim();
         const match = text.match(currencyRegex);
         if (match) {
-          price = parseFloat(match[0].replace(/[^\d.]/g, ''));
-          return false; // Break the loop
+          const cleanPrice = match[0].replace(/[^\d.]/g, '');
+          price = parseFloat(cleanPrice);
+          if (!isNaN(price)) {
+            return false; // Break the loop
+          }
         }
       });
     }
 
-    if (!price) {
+    if (!price || isNaN(price)) {
       return null;
     }
 
@@ -86,56 +96,68 @@ export async function updateProductPrices() {
 
     if (error) throw error;
 
-    for (const product of products as Product[]) {
-      const scrapedPrice = await scrapeProductPrice(product.url);
-      
-      if (scrapedPrice) {
-        const { error: updateError } = await supabase
-          .from('products')
-          .update({
-            current_price: scrapedPrice.price,
-            lowest_price: Math.min(product.lowest_price, scrapedPrice.price),
-            highest_price: Math.max(product.highest_price, scrapedPrice.price),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', product.id);
+    const results = await Promise.allSettled(
+      (products as Product[]).map(async (product) => {
+        try {
+          const scrapedPrice = await scrapeProductPrice(product.url);
+          
+          if (scrapedPrice) {
+            // Update product price
+            await supabase
+              .from('products')
+              .update({
+                current_price: scrapedPrice.price,
+                lowest_price: Math.min(product.lowest_price, scrapedPrice.price),
+                highest_price: Math.max(product.highest_price, scrapedPrice.price),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', product.id);
 
-        if (updateError) throw updateError;
+            // Add price history record
+            await supabase
+              .from('price_history')
+              .insert({
+                product_id: product.id,
+                price: scrapedPrice.price,
+                retailer: scrapedPrice.retailer,
+              });
 
-        const { error: historyError } = await supabase
-          .from('price_history')
-          .insert({
-            product_id: product.id,
-            price: scrapedPrice.price,
-            retailer: scrapedPrice.retailer,
-          });
+            // Check for price alerts
+            const { data: alerts } = await supabase
+              .from('user_products')
+              .select('*')
+              .eq('product_id', product.id)
+              .eq('notify_on_price_drop', true)
+              .lt('target_price', scrapedPrice.price);
 
-        if (historyError) throw historyError;
-
-        // Check for price alerts
-        const { data: alerts, error: alertsError } = await supabase
-          .from('user_products')
-          .select('*')
-          .eq('product_id', product.id)
-          .eq('notify_on_price_drop', true)
-          .lt('target_price', scrapedPrice.price);
-
-        if (alertsError) throw alertsError;
-
-        // Send notifications for price drops
-        for (const alert of alerts || []) {
-          await fetch('/.netlify/functions/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: alert.user_id,
-              productId: product.id,
-              message: `Price alert: ${product.name} is now $${scrapedPrice.price}`,
-            }),
-          });
+            // Send notifications for price drops
+            if (alerts && alerts.length > 0) {
+              await Promise.all(
+                alerts.map((alert) =>
+                  fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId: alert.user_id,
+                      productId: product.id,
+                      message: `Price alert: ${product.name} is now $${scrapedPrice.price}`,
+                    }),
+                  })
+                )
+              );
+            }
+          }
+        } catch (error) {
+          console.error(`Error updating product ${product.id}:`, error);
         }
-      }
+      })
+    );
+
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length > 0) {
+      console.error(`Failed to update ${failures.length} products`);
     }
+
   } catch (error) {
     console.error('Error updating product prices:', error);
     throw error;

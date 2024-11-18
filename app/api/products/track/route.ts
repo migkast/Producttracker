@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { scrapeProductPrice } from '@/lib/scraper';
+import { scrapeProductPrice } from '@/lib/server/scraper';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +14,29 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check if user has reached their product limit
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_premium')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const { count: trackedCount, error: countError } = await supabase
+      .from('user_products')
+      .select('*', { count: 'exact' })
+      .eq('user_id', session.user.id);
+
+    if (countError) throw countError;
+
+    if (!profile.is_premium && (trackedCount || 0) >= 5) {
+      return NextResponse.json(
+        { error: 'Free users can only track up to 5 products. Upgrade to Premium for unlimited tracking.' },
+        { status: 403 }
       );
     }
 
@@ -56,9 +79,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, product });
   } catch (error) {
-    console.error('Error tracking product:', error);
+    console.error('Error adding product:', error);
     return NextResponse.json(
-      { error: 'Failed to track product' },
+      { error: 'Failed to add product' },
       { status: 500 }
     );
   }

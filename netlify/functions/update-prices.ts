@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { updateProductPrices } from '../../lib/scraper';
+import { updateProductPrices } from '../../lib/server/scraper';
 
 const handler: Handler = async (event) => {
   try {
