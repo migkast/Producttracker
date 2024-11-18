@@ -19,20 +19,25 @@ const nextConfig = {
       };
     }
 
-    // Optimize the bundle size
-    config.optimization = {
-      ...config.optimization,
-      moduleIds: 'deterministic',
-      splitChunks: {
-        ...config.optimization.splitChunks,
-        chunks: 'all',
-        minSize: 20000,
-        maxSize: 244000,
-      },
-    };
+    // Add specific loader for undici
+    config.module.rules.push({
+      test: /node_modules\/undici\/.*\.js$/,
+      loader: 'babel-loader',
+      options: {
+        presets: ['@babel/preset-env'],
+        plugins: [
+          '@babel/plugin-proposal-class-properties',
+          '@babel/plugin-proposal-private-methods',
+          '@babel/plugin-proposal-class-static-block'
+        ]
+      }
+    });
 
     return config;
   },
-}
+  experimental: {
+    serverComponentsExternalPackages: ['undici']
+  }
+};
 
 module.exports = nextConfig;
