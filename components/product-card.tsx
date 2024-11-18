@@ -46,7 +46,10 @@ export function ProductCard({ product }: ProductCardProps) {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to track product");
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to track product');
+      }
 
       setIsTracking(true);
       toast({
@@ -56,13 +59,15 @@ export function ProductCard({ product }: ProductCardProps) {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to track product",
+        description: error instanceof Error ? error.message : "Failed to track product",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const productUrl = product.url || `/products/${product.id}`;
 
   return (
     <Card className="overflow-hidden">
@@ -107,7 +112,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <ShareButton title={product.name} url={product.url} />
+            <ShareButton title={product.name} url={productUrl} />
             <Button
               variant="outline"
               size="icon"
@@ -123,10 +128,12 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button className="flex-1">View Details</Button>
+          <Button className="flex-1" asChild>
+            <Link href={`/products/${product.id}`}>View Details</Link>
+          </Button>
           <Button variant="outline" size="icon" asChild>
             <a
-              href={product.url}
+              href={productUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
