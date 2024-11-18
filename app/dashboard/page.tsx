@@ -1,113 +1,55 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useAuth } from "@/components/auth-provider";
-import { Product, UserProduct } from "@/types";
-import { supabase } from "@/lib/supabase";
+import { redirect } from "next/navigation";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PriceChart } from "@/components/price-chart";
 import { ProductTable } from "@/components/product-table";
 import { BadgesShowcase } from "@/components/badges-showcase";
 import { ReferralProgram } from "@/components/referral-program";
 import { ProductRecommendations } from "@/components/product-recommendations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  TrendingDown,
-  TrendingUp,
-  Bell,
-  DollarSign,
-  Award,
-} from "lucide-react";
+import { TrendingDown, TrendingUp, Bell, Award } from "lucide-react";
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [trackedProducts, setTrackedProducts] = useState<Product[]>([]);
-  const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total_savings: 0,
-    price_alerts: 0,
-    badges_earned: 0,
-  });
+export default async function DashboardPage() {
+  const supabase = createServerComponentClient({ cookies });
 
-  useEffect(() => {
-    if (user) {
-      fetchTrackedProducts();
-      fetchUserStats();
-    }
-  }, [user]);
+  // Get user session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  async function fetchTrackedProducts() {
-    try {
-      const { data: userProductsData, error: userProductsError } = await supabase
-        .from("user_products")
-        .select("*")
-        .eq("user_id", user?.id);
-
-      if (userProductsError) throw userProductsError;
-
-      if (userProductsData) {
-        setUserProducts(userProductsData);
-
-        const productIds = userProductsData.map((up) => up.product_id);
-        const { data: productsData, error: productsError } = await supabase
-          .from("products")
-          .select("*")
-          .in("id", productIds);
-
-        if (productsError) throw productsError;
-
-        if (productsData) {
-          setTrackedProducts(productsData);
-        }
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch tracked products",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  // Redirect to login if not authenticated
+  if (!session?.user) {
+    redirect("/login");
   }
 
-  async function fetchUserStats() {
-    try {
-      const { data, error } = await supabase
-        .from("user_stats")
-        .select("*")
-        .eq("user_id", user?.id)
-        .single();
+  // Fetch user's tracked products
+  const { data: userProducts } = await supabase
+    .from("user_products")
+    .select("*")
+    .eq("user_id", session.user.id);
 
-      if (error) throw error;
-
-      if (data) {
-        setStats({
-          total_savings: data.total_savings,
-          price_alerts: data.active_alerts,
-          badges_earned: data.badges_earned,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching user stats:", error);
-    }
-  }
-
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="py-8">
-            <p className="text-center">Please log in to view your dashboard.</p>
-          </CardContent>
-        </Card>
-      </div>
+  // Fetch products details
+  const { data: products } = await supabase
+    .from("products")
+    .select("*")
+    .in(
+      "id",
+      (userProducts || []).map((up) => up.product_id)
     );
-  }
+
+  // Fetch user stats
+  const { data: stats } = await supabase
+    .from("user_stats")
+    .select("*")
+    .eq("user_id", session.user.id)
+    .single();
+
+  const userStats = {
+    total_savings: stats?.total_savings || 0,
+    price_alerts: stats?.active_alerts || 0,
+    badges_earned: stats?.badges_earned || 0,
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,12 +59,12 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <TrendingDown className="h-5 w-5" />
               Total Savings
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">${stats.total_savings}</p>
+            <p className="text-3xl font-bold">${userStats.total_savings}</p>
           </CardContent>
         </Card>
         <Card>
@@ -133,7 +75,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.price_alerts}</p>
+            <p className="text-3xl font-bold">{userStats.price_alerts}</p>
           </CardContent>
         </Card>
         <Card>
@@ -144,7 +86,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.badges_earned}</p>
+            <p className="text-3xl font-bold">{userStats.badges_earned}</p>
           </CardContent>
         </Card>
       </div>
@@ -158,34 +100,34 @@ export default function DashboardPage() {
 
         <TabsContent value="overview">
           <div className="grid gap-6">
-            {trackedProducts.length > 0 && (
+            {products && products.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Price History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <PriceChart productId={trackedProducts[0].id} />
+                  <PriceChart productId={products[0].id} />
                 </CardContent>
               </Card>
             )}
 
-            <ProductRecommendations
-              productId={trackedProducts[0]?.id}
-            />
+            {products && products.length > 0 && (
+              <ProductRecommendations productId={products[0].id} />
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="products">
           <ProductTable
-            products={trackedProducts}
-            userProducts={userProducts}
+            products={products || []}
+            userProducts={userProducts || []}
           />
         </TabsContent>
 
         <TabsContent value="achievements">
           <div className="space-y-6">
-            <BadgesShowcase />
-            <ReferralProgram />
+            <BadgesShowcase userId={session.user.id} />
+            <ReferralProgram userId={session.user.id} />
           </div>
         </TabsContent>
       </Tabs>
