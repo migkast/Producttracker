@@ -6,6 +6,7 @@
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NETLIFY = "true"
+  NODE_VERSION = "18"
 
 [functions]
   external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "cheerio", "axios"]
