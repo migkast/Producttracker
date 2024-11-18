@@ -2,9 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: false,
-  images: { 
+  images: {
     unoptimized: true,
-    domains: ['images.unsplash.com']
+    domains: ['images.unsplash.com'],
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -13,11 +13,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'standalone',
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000', '*.netlify.app'],
-    },
-  },
+  // Removed experimental.serverActions as it's enabled by default in Next.js 14
 };
 
 module.exports = nextConfig;
