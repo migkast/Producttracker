@@ -1,4 +1,5 @@
-import { chromium } from 'playwright-core';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { supabase } from '../supabase';
 import { Product } from '@/types';
 
@@ -8,17 +9,19 @@ interface ScrapedPrice {
   url: string;
 }
 
-export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | null> {
-  const isNetlify = process.env.NETLIFY === 'true';
-  const browser = await chromium.launch({
-    chromiumSandbox: false,
-    channel: isNetlify ? 'chrome' : undefined,
-  });
-  
-  try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle' });
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
+export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | null> {
+  try {
+    const { data: html } = await axios.get(url, {
+      headers: {
+        'User-Agent': USER_AGENT,
+      },
+    });
+
+    const $ = cheerio.load(html);
+    
+    // Common price selectors for different retailers
     const priceSelectors = [
       '.price',
       '[data-test="product-price"]',
@@ -26,18 +29,36 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
       '[itemprop="price"]',
       '.a-price-whole',
       '.price-characteristic',
+      // Add more selectors as needed for different retailers
     ];
 
     let price: number | null = null;
+    
+    // Try each selector until we find a price
     for (const selector of priceSelectors) {
-      const priceElement = await page.$(selector);
-      if (priceElement) {
-        const priceText = await priceElement.textContent();
-        if (priceText) {
-          price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+      const priceText = $(selector).first().text().trim();
+      if (priceText) {
+        // Extract numbers from the price text
+        const matches = priceText.match(/[\d,.]+/);
+        if (matches) {
+          // Convert price string to number, handling different formats
+          price = parseFloat(matches[0].replace(/[,.]/g, '')) / 100;
           break;
         }
       }
+    }
+
+    if (!price) {
+      // Try finding any element with a currency symbol
+      const currencyRegex = /[\$\£\€]?\s*\d+([.,]\d{2})?/;
+      $('*').each((_, element) => {
+        const text = $(element).text().trim();
+        const match = text.match(currencyRegex);
+        if (match) {
+          price = parseFloat(match[0].replace(/[^\d.]/g, ''));
+          return false; // Break the loop
+        }
+      });
     }
 
     if (!price) {
@@ -54,8 +75,6 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
   } catch (error) {
     console.error('Error scraping price:', error);
     return null;
-  } finally {
-    await browser.close();
   }
 }
 
@@ -93,6 +112,7 @@ export async function updateProductPrices() {
 
         if (historyError) throw historyError;
 
+        // Check for price alerts
         const { data: alerts, error: alertsError } = await supabase
           .from('user_products')
           .select('*')
@@ -102,6 +122,7 @@ export async function updateProductPrices() {
 
         if (alertsError) throw alertsError;
 
+        // Send notifications for price drops
         for (const alert of alerts || []) {
           await fetch('/.netlify/functions/send-notification', {
             method: 'POST',
