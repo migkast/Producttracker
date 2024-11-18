@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Trophy } from "lucide-react";
 import { badges } from "@/lib/gamification";
-import { useAuth } from "@/components/auth-provider";
 import { supabase } from "@/lib/supabase";
 
-export function BadgesShowcase() {
-  const { user } = useAuth();
+interface BadgesShowcaseProps {
+  userId: string;
+}
+
+export function BadgesShowcase({ userId }: BadgesShowcaseProps) {
   const [userBadges, setUserBadges] = useState<string[]>([]);
   const [stats, setStats] = useState({
     tracked_products: 0,
@@ -19,34 +21,32 @@ export function BadgesShowcase() {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchUserBadges();
-      fetchUserStats();
+    async function fetchUserBadges() {
+      const { data } = await supabase
+        .from("user_badges")
+        .select("badge_id")
+        .eq("user_id", userId);
+
+      if (data) {
+        setUserBadges(data.map((ub) => ub.badge_id));
+      }
     }
-  }, [user]);
 
-  async function fetchUserBadges() {
-    const { data } = await supabase
-      .from("user_badges")
-      .select("badge_id")
-      .eq("user_id", user?.id);
+    async function fetchUserStats() {
+      const { data } = await supabase
+        .from("user_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
 
-    if (data) {
-      setUserBadges(data.map((ub) => ub.badge_id));
+      if (data) {
+        setStats(data);
+      }
     }
-  }
 
-  async function fetchUserStats() {
-    const { data } = await supabase
-      .from("user_stats")
-      .select("*")
-      .eq("user_id", user?.id)
-      .single();
-
-    if (data) {
-      setStats(data);
-    }
-  }
+    fetchUserBadges();
+    fetchUserStats();
+  }, [userId]);
 
   return (
     <Card>
