@@ -12,13 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { supabase } from "@/lib/supabase";
+import type { Database } from "@/lib/db-types";
 
-interface Notification {
-  id: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+type Notification = Database['public']['Tables']['notifications']['Row'];
 
 export function NotificationsDropdown() {
   const { user } = useAuth();
@@ -26,30 +22,35 @@ export function NotificationsDropdown() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
+    if (!user) {
+      setLoading(false);
+      return;
     }
+
+    async function fetchNotifications() {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+        setNotifications(data || []);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchNotifications();
   }, [user]);
 
-  async function fetchNotifications() {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function markAsRead(notificationId: string) {
+    if (!user) return;
+
     try {
       await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -65,6 +66,10 @@ export function NotificationsDropdown() {
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
+  }
+
+  if (!user) {
+    return null;
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
