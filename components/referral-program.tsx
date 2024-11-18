@@ -7,40 +7,40 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Users, Copy, Gift } from "lucide-react";
-import { useAuth } from "@/components/auth-provider";
 import { supabase } from "@/lib/supabase";
 
-export function ReferralProgram() {
-  const { user } = useAuth();
+interface ReferralProgramProps {
+  userId: string;
+}
+
+export function ReferralProgram({ userId }: ReferralProgramProps) {
   const { toast } = useToast();
   const [referralCode, setReferralCode] = useState("");
   const [referralCount, setReferralCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchReferralData();
-    }
-  }, [user]);
+    async function fetchReferralData() {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("referral_code, successful_referrals")
+          .eq("id", userId)
+          .single();
 
-  async function fetchReferralData() {
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("referral_code, successful_referrals")
-        .eq("id", user?.id)
-        .single();
-
-      if (profile) {
-        setReferralCode(profile.referral_code);
-        setReferralCount(profile.successful_referrals);
+        if (profile) {
+          setReferralCode(profile.referral_code);
+          setReferralCount(profile.successful_referrals);
+        }
+      } catch (error) {
+        console.error("Error fetching referral data:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching referral data:", error);
-    } finally {
-      setLoading(false);
     }
-  }
+
+    fetchReferralData();
+  }, [userId]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(referralCode);
