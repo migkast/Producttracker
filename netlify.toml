@@ -9,14 +9,7 @@
   NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
+  package = "@opennextjs/netlify"
 
 [functions]
   node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/next_server"
-  status = 200
-  force = false
-  conditions = {Role = ["anonymous", "authenticated"]}
