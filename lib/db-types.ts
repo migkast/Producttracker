@@ -42,6 +42,32 @@ export interface Database {
           updated_at?: string;
         };
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          product_id: string;
+          message: string;
+          read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          product_id: string;
+          message: string;
+          read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          product_id?: string;
+          message?: string;
+          read?: boolean;
+          created_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
