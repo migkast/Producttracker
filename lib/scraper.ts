@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer-core';
+import { chromium } from 'playwright-core';
 import { supabase } from './supabase';
 import { Product } from '@/types';
 
@@ -9,15 +9,17 @@ interface ScrapedPrice {
 }
 
 export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | null> {
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: process.env.CHROME_BIN || undefined,
-    headless: true,
+  // In Netlify Functions environment, use a different browser instance strategy
+  const isNetlify = process.env.NETLIFY === 'true';
+  const browser = await chromium.launch({
+    chromiumSandbox: false,
+    // Use system Chrome in Netlify environment
+    channel: isNetlify ? 'chrome' : undefined,
   });
   
   try {
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle0' });
+    await page.goto(url, { waitUntil: 'networkidle' });
 
     // Common price selectors for different retailers
     const priceSelectors = [
@@ -33,7 +35,7 @@ export async function scrapeProductPrice(url: string): Promise<ScrapedPrice | nu
     for (const selector of priceSelectors) {
       const priceElement = await page.$(selector);
       if (priceElement) {
-        const priceText = await priceElement.evaluate(el => el.textContent);
+        const priceText = await priceElement.textContent();
         if (priceText) {
           price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
           break;

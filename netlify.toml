@@ -6,11 +6,10 @@
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1"
-  CHROME_BIN = "/usr/bin/chromium-browser"
+  NETLIFY = "true"
 
 [functions]
-  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "puppeteer-core"]
+  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "playwright-core"]
   node_bundler = "esbuild"
 
 [[redirects]]
