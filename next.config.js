@@ -1,10 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: false,
-  images: {
+  swcMinify: true,
+  images: { 
     unoptimized: true,
-    domains: ['images.unsplash.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com'
+      }
+    ]
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -12,8 +17,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
-  // Removed experimental.serverActions as it's enabled by default in Next.js 14
+  experimental: {
+    serverActions: true
+  }
 };
 
 module.exports = nextConfig;

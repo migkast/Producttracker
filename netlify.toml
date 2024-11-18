@@ -9,7 +9,20 @@
   NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
-  package = "@opennextjs/netlify"
+  package = "@netlify/plugin-nextjs"
 
 [functions]
   node_bundler = "esbuild"
+  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "cheerio", "axios"]
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+  conditions = {Role = ["admin"]}
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
