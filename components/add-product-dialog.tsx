@@ -68,13 +68,31 @@ export function AddProductDialog() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
-      const response = await fetch("/api/products/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+
+      // First, scrape the product price
+      const scrapeResponse = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: values.url }),
       });
 
-      if (!response.ok) {
+      if (!scrapeResponse.ok) {
+        throw new Error('Failed to scrape product price');
+      }
+
+      const priceData = await scrapeResponse.json();
+
+      // Then, track the product with the scraped price
+      const trackResponse = await fetch("/api/products/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...values,
+          currentPrice: priceData.price,
+        }),
+      });
+
+      if (!trackResponse.ok) {
         throw new Error("Failed to track product");
       }
 
