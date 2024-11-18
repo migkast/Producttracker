@@ -5,11 +5,10 @@
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
-  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
   NETLIFY = "true"
 
 [functions]
-  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "playwright-core"]
+  external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "cheerio", "axios"]
   node_bundler = "esbuild"
 
 [[redirects]]
