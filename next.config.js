@@ -17,19 +17,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config, { isServer }) => {
-    // Handle undici/cheerio dependency issues
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        child_process: false
-      };
-    }
-    return config;
+  output: 'export',
+  experimental: {
+    serverActions: false
   }
 }
-
-module.exports = nextConfig;

@@ -6,10 +6,14 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(request: Request) {
   try {
+    // Skip environment validation during build time
+    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json({ status: 'config-pending' });
+    }
+
     const headersList = headers();
     const authHeader = headersList.get('authorization');
 
-    // Verify the request is authorized
     if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },

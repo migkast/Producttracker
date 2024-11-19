@@ -1,16 +1,8 @@
 import { notFound } from "next/navigation";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import { ProductCard } from "@/components/product-card";
 import { Badge } from "@/components/ui/badge";
 import { AddProductDialog } from "@/components/add-product-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { supabase } from '@/lib/supabase';
 
 // Define available categories
 const categories = [
@@ -31,13 +23,14 @@ export function generateStaticParams() {
   }));
 }
 
+export const dynamic = 'force-static';
+export const revalidate = 3600; // Revalidate every hour
+
 export default async function CategoryPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const supabase = createServerComponentClient({ cookies });
-
   // Validate slug
   if (!categories.includes(params.slug)) {
     return notFound();
