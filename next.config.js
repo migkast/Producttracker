@@ -2,14 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  images: { 
-    unoptimized: true,
+  images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com'
-      }
-    ]
+        hostname: 'images.unsplash.com',
+      },
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -17,11 +16,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'export',
   distDir: '.next',
   experimental: {
-    optimizeCss: true
-  }
-}
+    optimizeCss: true,
+  },
+};
 
 module.exports = nextConfig;
