@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { SearchResults } from "@/components/search-results";
-import { SearchBar } from "@/components/search-bar";
+import { SearchResults } from "@/components/search/search-results";
+import { SearchBar } from "@/components/search/search-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SearchPage() {

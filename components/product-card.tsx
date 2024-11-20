@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShareButton } from "@/components/share-button";
 import { Product } from "@/types";
 import { ArrowDown, Bell, BellOff, ExternalLink } from "lucide-react";
 import { useState } from "react";
@@ -47,8 +46,7 @@ export function ProductCard({ product }: ProductCardProps) {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to track product');
+        throw new Error("Failed to track product");
       }
 
       setIsTracking(true);
@@ -59,15 +57,13 @@ export function ProductCard({ product }: ProductCardProps) {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to track product",
+        description: "Failed to track product",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const productUrl = product.url || `/products/${product.id}`;
 
   return (
     <Card className="overflow-hidden">
@@ -112,7 +108,6 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <ShareButton title={product.name} url={productUrl} />
             <Button
               variant="outline"
               size="icon"
@@ -133,7 +128,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </Button>
           <Button variant="outline" size="icon" asChild>
             <a
-              href={productUrl}
+              href={product.url}
               target="_blank"
               rel="noopener noreferrer"
             >
