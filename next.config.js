@@ -20,8 +20,7 @@ const nextConfig = {
   output: 'export',
   distDir: '.next',
   experimental: {
-    optimizeCss: true,
-    legacyBrowsers: false
+    optimizeCss: true
   }
 }
 
