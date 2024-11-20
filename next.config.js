@@ -18,8 +18,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'export',
+  distDir: '.next',
   experimental: {
-    serverActions: false
+    optimizeCss: true,
+    legacyBrowsers: false
   }
 }
 
