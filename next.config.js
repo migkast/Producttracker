@@ -22,3 +22,5 @@ const nextConfig = {
     serverActions: false
   }
 }
+
+module.exports = nextConfig;

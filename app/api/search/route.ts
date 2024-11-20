@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,7 +16,6 @@ export async function GET(request: Request) {
       .from('products')
       .select('*');
 
-    // Apply search filters
     if (query) {
       queryBuilder = queryBuilder.ilike('name', `%${query}%`);
     }
@@ -31,7 +32,6 @@ export async function GET(request: Request) {
       queryBuilder = queryBuilder.lte('current_price', parseFloat(maxPrice));
     }
 
-    // Apply sorting
     switch (sortBy) {
       case 'price_asc':
         queryBuilder = queryBuilder.order('current_price', { ascending: true });

@@ -1,6 +1,7 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -13,8 +14,6 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-
-    const supabase = createRouteHandlerClient({ cookies });
 
     const { data, error } = await supabase
       .from('price_history')
