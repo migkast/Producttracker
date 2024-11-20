@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  images: {
+  output: 'export',
+  images: { 
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-    ],
+        hostname: 'images.unsplash.com'
+      }
+    ]
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -16,10 +16,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  distDir: '.next',
   experimental: {
-    optimizeCss: true,
-  },
+    optimizeCss: true
+  }
 };
 
 module.exports = nextConfig;

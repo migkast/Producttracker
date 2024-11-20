@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,21 +15,22 @@ export async function GET(request: Request) {
 
     let queryBuilder = supabase.from('products').select('*');
 
-    // Apply filters based on query parameters
     if (query) {
       queryBuilder = queryBuilder.ilike('name', `%${query}%`);
     }
+
     if (category && category !== 'all') {
       queryBuilder = queryBuilder.eq('category', category);
     }
+
     if (minPrice) {
       queryBuilder = queryBuilder.gte('current_price', parseFloat(minPrice));
     }
+
     if (maxPrice) {
       queryBuilder = queryBuilder.lte('current_price', parseFloat(maxPrice));
     }
 
-    // Sorting logic
     switch (sortBy) {
       case 'price_asc':
         queryBuilder = queryBuilder.order('current_price', { ascending: true });
@@ -41,12 +45,10 @@ export async function GET(request: Request) {
         queryBuilder = queryBuilder.order('created_at', { ascending: false });
     }
 
-    // Fetch data
     const { data, error } = await queryBuilder;
 
     if (error) throw error;
 
-    // Return response
     return NextResponse.json({ products: data });
   } catch (error) {
     console.error('Error searching products:', error);
