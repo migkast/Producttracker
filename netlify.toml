@@ -15,11 +15,6 @@
   node_bundler = "esbuild"
   external_node_modules = ["@supabase/supabase-js", "openai", "stripe", "cheerio", "axios"]
 
-# Configure Netlify cron jobs for price updates
-[build.cron]
-  command = "curl -X GET /.netlify/functions/update-prices"
-  schedule = "0 */6 * * *"
-
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

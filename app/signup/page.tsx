@@ -61,10 +61,10 @@ export default function SignUpPage() {
       });
 
       router.push("/login");
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error?.message || "Something went wrong. Please try again.",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {

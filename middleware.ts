@@ -3,15 +3,30 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
-  // Return early if this is a static export
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return NextResponse.next();
-  }
-
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
-  await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Add session user to response headers for client-side access
+  if (session?.user) {
+    res.headers.set('x-user-id', session.user.id);
+  }
 
   return res;
 }
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
+};

@@ -3,7 +3,7 @@ import { SearchResults } from "@/components/search/search-results";
 import { SearchBar } from "@/components/search/search-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Make this a client-side rendered page
+// Mark page as dynamic
 export const dynamic = 'force-dynamic';
 
 export default function SearchPage() {

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Remove output: 'export' to allow dynamic routes
   images: { 
     unoptimized: true,
     remotePatterns: [
@@ -14,9 +15,6 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  experimental: {
-    optimizeCss: true
   }
 };
 
