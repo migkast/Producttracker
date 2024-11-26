@@ -1,10 +1,10 @@
+// Mark component as client-side
 "use client";
 
 import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
 import { useEffect, useState } from "react";
 import { Product } from "@/types";
-import { supabase } from "@/lib/supabase";
 
 export function SearchResults() {
   const searchParams = useSearchParams();
@@ -15,49 +15,9 @@ export function SearchResults() {
     async function fetchProducts() {
       try {
         setLoading(true);
-        
-        let query = supabase.from('products').select('*');
-
-        const search = searchParams.get('q');
-        const category = searchParams.get('category');
-        const minPrice = searchParams.get('minPrice');
-        const maxPrice = searchParams.get('maxPrice');
-        const sortBy = searchParams.get('sortBy');
-
-        if (search) {
-          query = query.ilike('name', `%${search}%`);
-        }
-
-        if (category && category !== 'all') {
-          query = query.eq('category', category);
-        }
-
-        if (minPrice) {
-          query = query.gte('current_price', parseFloat(minPrice));
-        }
-
-        if (maxPrice) {
-          query = query.lte('current_price', parseFloat(maxPrice));
-        }
-
-        switch (sortBy) {
-          case 'price_asc':
-            query = query.order('current_price', { ascending: true });
-            break;
-          case 'price_desc':
-            query = query.order('current_price', { ascending: false });
-            break;
-          case 'name':
-            query = query.order('name');
-            break;
-          default:
-            query = query.order('created_at', { ascending: false });
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        setProducts(data || []);
+        const response = await fetch(`/api/search?${searchParams.toString()}`);
+        const data = await response.json();
+        setProducts(data.products);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
